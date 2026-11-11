@@ -1,0 +1,121 @@
+name: Sync with Upstream
+
+# Keeps this fork up to date with chigwell/telegram-mcp without losing the
+# fork's Docker publishing setup. After a clean merge the new main is pushed and
+# the Docker build is dispatched explicitly, because a push made with the
+# default GITHUB_TOKEN does not trigger other workflows.
+
+on:
+  schedule:
+    # Daily at 03:17 UTC (11:17 Beijing time).
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_REPO: chigwell/telegram-mcp
+  UPSTREAM_BRANCH: main
+  FORK_BRANCH: main
+
+jobs:
+  sync:
+    name: Merge upstream/main into fork
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out fork
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.FORK_BRANCH }}
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream
+        run: |
+          remote="https://github.com/${UPSTREAM_REPO}.git"
+          git remote add upstream "$remote" 2>/dev/null || git remote set-url upstream "$remote"
+          git fetch --no-tags upstream "${UPSTREAM_BRANCH}"
+
+      - name: Detect new upstream commits
+        id: detect
+        run: |
+          count=$(git rev-list --count "HEAD..upstream/${UPSTREAM_BRANCH}")
+          echo "count=${count}" >> "$GITHUB_OUTPUT"
+          echo "New upstream commits: ${count}"
+          if [ "${count}" -gt 0 ]; then
+            {
+              echo "### Upstream commits to merge (${count})"
+              echo '```'
+              git log --oneline "HEAD..upstream/${UPSTREAM_BRANCH}"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Merge upstream
+        if: steps.detect.outputs.count != '0'
+        id: merge
+        run: |
+          if git merge --no-edit "upstream/${UPSTREAM_BRANCH}"; then
+            echo "result=clean" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=conflict" >> "$GITHUB_OUTPUT"
+            git diff --name-only --diff-filter=U | sort > conflict-files.txt
+            git merge --abort
+          fi
+
+      - name: Push merged main
+        if: steps.merge.outputs.result == 'clean'
+        run: |
+          git push origin "HEAD:${FORK_BRANCH}"
+          echo "Merged upstream/${UPSTREAM_BRANCH} into ${FORK_BRANCH}." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Dispatch Docker build
+        if: steps.merge.outputs.result == 'clean'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A GITHUB_TOKEN push does not fire other workflows, so start the
+          # image build explicitly instead of relying on the push event.
+          gh workflow run docker-build.yml --ref "${FORK_BRANCH}"
+          echo "Dispatched Docker Build & Publish." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report merge conflict
+        if: steps.merge.outputs.result == 'conflict'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing=$(gh issue list --state open --search "Upstream sync conflict in:title" --json number --jq '.[0].number // empty')
+          if [ -n "${existing}" ]; then
+            echo "Open conflict issue #${existing} already exists; leaving it as is." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo "Automatic sync from \`${UPSTREAM_REPO}\` could not be merged: the files below changed on both sides."
+            echo
+            sed 's/^/- `/; s/$/`/' conflict-files.txt
+            echo
+            echo "Resolve locally:"
+            echo
+            echo '```bash'
+            echo "git fetch upstream"
+            echo "git merge upstream/${UPSTREAM_BRANCH}"
+            echo "# edit the files above until the merge is clean, then"
+            echo "git add -A && git commit && git push"
+            echo '```'
+            echo
+            echo "This run left the fork untouched."
+          } > conflict-body.md
+          gh issue create --title "Upstream sync conflict" --body-file conflict-body.md
+          echo "Opened a conflict issue listing the files that need a manual merge." >> "$GITHUB_STEP_SUMMARY"
+          exit 1

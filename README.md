@@ -980,6 +980,25 @@ setups.
 
 For multiple accounts, pass variables such as `TELEGRAM_SESSION_STRING_WORK` and `TELEGRAM_SESSION_STRING_PERSONAL`.
 
+### Keeping this fork in sync with upstream
+
+This fork tracks `chigwell/telegram-mcp`.
+`.github/workflows/upstream-sync.yml` merges `upstream/main` into this `main`
+once a day (03:17 UTC) and can also be started from the Actions tab.
+
+- **Clean merge** — the merged `main` is pushed and the Docker build is
+  dispatched explicitly, because a push made with the default `GITHUB_TOKEN`
+  does not trigger other workflows. `latest` therefore follows upstream within a
+  day.
+- **Conflict** — the merge is aborted and the fork stays untouched; an issue
+  titled *Upstream sync conflict* lists the files that changed on both sides.
+  Resolve it locally with `git fetch upstream && git merge upstream/main`, push,
+  then close the issue.
+
+The sync moves the `main` branch only; upstream release tags are not mirrored.
+GitHub also pauses scheduled workflows in repositories without activity for 60
+days — dispatch the workflow manually or push any commit to re-arm it.
+
 ## Development
 
 The implementation is split into a small compatibility entrypoint and modular package code:
