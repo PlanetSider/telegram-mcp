@@ -912,8 +912,8 @@ docker pull ghcr.io/planetsider/telegram-mcp:latest
 ```
 
 Tags: `latest` (default branch), `main`, `sha-<commit>`, and `vX.Y.Z` for release
-tags. The package is private by default — switch it to public under
-*Packages → Package settings* for anonymous pulls, or authenticate first with
+tags. The package is public, so `docker pull` needs no credentials; if you make
+it private later, authenticate first with
 `echo $GITHUB_TOKEN | docker login ghcr.io -u <user> --password-stdin`.
 
 Build the image locally instead:
