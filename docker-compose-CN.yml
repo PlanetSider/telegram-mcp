@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  telegram-mcp:
+    # 镜像由 .github/workflows/docker-build.yml 自动构建并发布到 GHCR（amd64/arm64 双架构）。
+    # `docker compose -f docker-compose-CN.yml up -d` 会直接拉取该镜像；
+    # 想用本地源码构建，改用 `docker compose -f docker-compose-CN.yml up -d --build`。
+    image: ghcr.io/planetsider/telegram-mcp:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: telegram-mcp
+    # 从同目录下的 .env 文件载入环境变量
+    env_file:
+      - .env
+    # 使用 streamable HTTP 传输，一个长期运行的容器即可服务所有 MCP 客户端
+    # （参见 README.md 的 Transports 章节）。容器内的 MCP_HOST 必须是
+    # 0.0.0.0，映射到宿主机的端口才能正常工作。
+    environment:
+      MCP_TRANSPORT: http
+      MCP_HOST: 0.0.0.0
+    # 该端点没有鉴权，只发布到本机回环地址。
+    ports:
+      - "127.0.0.1:8765:8765"
+    # 可选：如果不使用 TELEGRAM_SESSION_STRING，取消下面几行注释，
+    # 挂载一个本地目录来持久化 Telegram 会话文件。
+    # 把 './telegram_sessions' 换成你想要的宿主机路径。
+    # volumes:
+    #   - ./telegram_sessions:/app
+    volumes:
+      # 语音/视频留言的转写缓存（SQLite，见 telegram_mcp/transcription.py）。
+      # 不挂载这个卷时，缓存只存在于容器的可写层，每次
+      # `docker compose build` 都会丢失。缓存里是明文的私聊转写文本，
+      # 建议为这个目录单独制定备份/保留策略，不要和其他备份混在一起。
+      # 宿主机目录必须能被 uid 1000（appuser）读写：
+      #   mkdir -p ./transcript_cache && chown 1000:1000 ./transcript_cache
+      - ./transcript_cache:/app/data/transcripts
+    restart: unless-stopped

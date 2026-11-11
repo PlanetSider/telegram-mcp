@@ -108,5 +108,8 @@ jobs:
       - name: Validate Compose file syntax
         run: docker compose config
 
+      - name: Validate Chinese-commented Compose file syntax
+        run: docker compose -f docker-compose-CN.yml config
+
       - name: Build Compose services
         run: docker compose build

@@ -2,9 +2,6 @@ version: '3.8'
 
 services:
   telegram-mcp:
-    # Prebuilt multi-arch image published by .github/workflows/docker-build.yml.
-    # `docker compose up -d` pulls it; `docker compose up --build` builds locally.
-    image: ghcr.io/planetsider/telegram-mcp:latest
     build:
       context: .
       dockerfile: Dockerfile

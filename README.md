@@ -941,7 +941,16 @@ docker run -d --name telegram-mcp --restart unless-stopped \
 machine — the endpoint is unauthenticated, so never publish it on a public
 interface.
 
-The bundled Compose file runs the same setup:
+Two Compose files are bundled. `docker-compose-CN.yml` is the fork's
+Chinese-commented variant: it pins the prebuilt GHCR image, so a plain `up -d`
+pulls it instead of building:
+
+```bash
+docker compose -f docker-compose-CN.yml up -d
+```
+
+`docker-compose.yml` is kept byte-identical to upstream and builds from the
+local source:
 
 ```bash
 docker compose up --build -d
@@ -994,6 +1003,11 @@ once a day (03:17 UTC) and can also be started from the Actions tab.
   titled *Upstream sync conflict* lists the files that changed on both sides.
   Resolve it locally with `git fetch upstream && git merge upstream/main`, push,
   then close the issue.
+
+Fork-only files are never touched by the sync: `docker-compose-CN.yml` and
+`.env.example.CN` carry Chinese comments (the CN compose file also pins the
+image), while `docker-compose.yml` and `.env.example` stay byte-identical to
+upstream and follow every upstream change.
 
 The sync moves the `main` branch only; upstream release tags are not mirrored.
 GitHub also pauses scheduled workflows in repositories without activity for 60
