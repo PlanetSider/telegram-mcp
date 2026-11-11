@@ -4,8 +4,8 @@
 
 ![MCP Badge](https://badge.mcpx.dev)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
-[![Python Lint & Format Check](https://github.com/chigwell/telegram-mcp/actions/workflows/python-lint-format.yml/badge.svg)](https://github.com/chigwell/telegram-mcp/actions/workflows/python-lint-format.yml)
-[![Docker Build & Compose Validation](https://github.com/chigwell/telegram-mcp/actions/workflows/docker-build.yml/badge.svg)](https://github.com/chigwell/telegram-mcp/actions/workflows/docker-build.yml)
+[![Python Lint & Format Check](https://github.com/PlanetSider/telegram-mcp/actions/workflows/python-lint-format.yml/badge.svg)](https://github.com/PlanetSider/telegram-mcp/actions/workflows/python-lint-format.yml)
+[![Docker Build & Publish](https://github.com/PlanetSider/telegram-mcp/actions/workflows/docker-build.yml/badge.svg)](https://github.com/PlanetSider/telegram-mcp/actions/workflows/docker-build.yml)
 
 A Telegram integration for Claude, Cursor, and other MCP-compatible clients. It exposes Telegram account, chat, message, contact, media, folder, and admin operations through the [Model Context Protocol](https://modelcontextprotocol.io/) using [Telethon](https://docs.telethon.dev/).
 
@@ -904,7 +904,19 @@ TELEGRAM_AUDIT_LOG=/path/to/telegram_audit.log
 
 For complete compose templates and client configurations (Claude Desktop, Cursor, etc.), see the [**Docker Deployment Guide**](examples/docker/README.md).
 
-Build the image:
+Multi-arch images (`linux/amd64`, `linux/arm64`) are built and published to the
+GitHub Container Registry on every push to `main`:
+
+```bash
+docker pull ghcr.io/planetsider/telegram-mcp:latest
+```
+
+Tags: `latest` (default branch), `main`, `sha-<commit>`, and `vX.Y.Z` for release
+tags. The package is private by default — switch it to public under
+*Packages → Package settings* for anonymous pulls, or authenticate first with
+`echo $GITHUB_TOKEN | docker login ghcr.io -u <user> --password-stdin`.
+
+Build the image locally instead:
 
 ```bash
 docker build -t telegram-mcp:latest .
