@@ -2,14 +2,14 @@ version: '3.8'
 
 services:
   telegram-mcp:
-    # 镜像由 .github/workflows/docker-build.yml 自动构建并发布到 GHCR（amd64/arm64 双架构）。
-    # `docker compose -f docker-compose-CN.yml up -d` 会直接拉取该镜像；
-    # 想用本地源码构建，改用 `docker compose -f docker-compose-CN.yml up -d --build`。
+    # 镜像由 .github/workflows/docker-build.yml 自动构建并发布到 GHCR
+    # （linux/amd64、linux/arm64 双架构）。本文件只声明镜像、不包含 build 段，
+    # 因此 `docker compose -f docker-compose-CN.yml up -d` 会直接拉取该镜像。
+    # 更新到最新镜像：先 `docker compose -f docker-compose-CN.yml pull`，
+    # 或者用 `up -d --pull always`。
+    # 想从本地源码构建，请改用上游版 docker-compose.yml：
+    # `docker compose up --build -d`。
     image: ghcr.io/planetsider/telegram-mcp:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
     container_name: telegram-mcp
     # 从同目录下的 .env 文件载入环境变量
     env_file:

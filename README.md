@@ -949,8 +949,10 @@ pulls it instead of building:
 docker compose -f docker-compose-CN.yml up -d
 ```
 
-`docker-compose.yml` is kept byte-identical to upstream and builds from the
-local source:
+The CN file has no `build:` section, so Compose pulls the image instead of
+building it; `docker compose -f docker-compose-CN.yml pull` refreshes the
+`latest` tag. `docker-compose.yml` is kept byte-identical to upstream and
+builds from the local source:
 
 ```bash
 docker compose up --build -d
