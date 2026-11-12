@@ -139,9 +139,7 @@ def test_bearer_wrong_token_rejected():
 
 
 def test_either_scheme_works_when_both_enabled():
-    config = HttpAuthConfig(
-        basic_user="alice", basic_password="s3cret", bearer_token="token-123"
-    )
+    config = HttpAuthConfig(basic_user="alice", basic_password="s3cret", bearer_token="token-123")
     client = _client(config)
     assert client.get("/mcp", headers=_basic_header("alice:s3cret")).status_code == 200
     assert client.get("/mcp", headers={"Authorization": "Bearer token-123"}).status_code == 200
@@ -149,9 +147,7 @@ def test_either_scheme_works_when_both_enabled():
 
 
 def test_www_authenticate_lists_enabled_schemes():
-    config = HttpAuthConfig(
-        basic_user="alice", basic_password="s3cret", bearer_token="token-123"
-    )
+    config = HttpAuthConfig(basic_user="alice", basic_password="s3cret", bearer_token="token-123")
     challenge = _client(config).get("/mcp").headers["www-authenticate"].lower()
     assert "basic realm=" in challenge
     assert "bearer realm=" in challenge
