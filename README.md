@@ -4,7 +4,6 @@
 
 ![MCP Badge](https://badge.mcpx.dev)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
-[![Python Lint & Format Check](https://github.com/PlanetSider/telegram-mcp/actions/workflows/python-lint-format.yml/badge.svg)](https://github.com/PlanetSider/telegram-mcp/actions/workflows/python-lint-format.yml)
 [![Docker Build & Publish](https://github.com/PlanetSider/telegram-mcp/actions/workflows/docker-build.yml/badge.svg)](https://github.com/PlanetSider/telegram-mcp/actions/workflows/docker-build.yml)
 
 A Telegram integration for Claude, Cursor, and other MCP-compatible clients. It exposes Telegram account, chat, message, contact, media, folder, and admin operations through the [Model Context Protocol](https://modelcontextprotocol.io/) using [Telethon](https://docs.telethon.dev/).
@@ -1086,7 +1085,7 @@ Run tests with coverage:
 uv run pytest --cov --cov-report=term-missing --cov-report=xml
 ```
 
-Coverage is configured in `pyproject.toml` with an 80% minimum gate for deterministic unit-testable core modules. GitHub Actions runs the same coverage command and uploads `coverage.xml`.
+Coverage is configured in `pyproject.toml` with an 80% minimum gate for deterministic unit-testable core modules. Run the suite locally before opening a change: this fork's GitHub Actions only builds and publishes the Docker image, so tests and formatting are not gated by CI.
 
 Run formatting checks:
 
