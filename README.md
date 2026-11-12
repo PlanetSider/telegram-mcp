@@ -565,6 +565,52 @@ to accept, e.g. `MCP_ALLOWED_HOSTS=mcp.example.com`, and `MCP_ALLOWED_ORIGINS`
 to any browser origins that may call the server. Each replaces the local
 default list. Comma-separated; supports a `:*` suffix to allow any port.
 
+### HTTP authentication
+
+The `http` transport can require credentials. Both schemes are optional and
+enabled purely by environment variables, so a deployment that sets neither keeps
+the historical open behaviour:
+
+| Scheme | Variables | Client header |
+| ------ | --------- | ------------- |
+| HTTP Basic | `MCP_AUTH_USER`, `MCP_AUTH_PASSWORD` | `Authorization: Basic <base64(user:password)>` |
+| Bearer token | `MCP_AUTH_TOKEN` | `Authorization: Bearer <token>` |
+
+Set both pairs to accept either one. A Basic pair that is only half configured
+aborts startup instead of silently serving without authentication. Requests
+without valid credentials get `401` with a `WWW-Authenticate` challenge; the
+response never says whether the user or the password was wrong.
+
+```bash
+# Claude Code
+claude mcp add --transport http telegram http://127.0.0.1:8765/mcp \
+  --header "Authorization: Bearer <token>"
+
+# Codex
+codex mcp add telegram --url http://127.0.0.1:8765/mcp \
+  --header "Authorization: Bearer <token>"
+```
+
+JSON-configured clients send the same header through their `headers` object:
+
+```json
+{
+  "mcpServers": {
+    "telegram": {
+      "url": "http://127.0.0.1:8765/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
+    }
+  }
+}
+```
+
+CORS preflights and the signed media/upload links are not challenged: a
+preflight carries no credentials, and a browser opening a signed link cannot
+supply any. Authentication covers the `http` transport only — `sse` is served by
+the SDK, and `stdio` never leaves the local process. Terminate TLS in front of
+the server (Caddy, nginx) before exposing it beyond your machine; otherwise
+credentials and traffic are plaintext.
+
 Prefer `http` when more than one MCP client (or many coding-agent sessions)
 will use the server: a single long-lived process holds one Telegram
 connection, instead of every client spawning its own Telethon session —
@@ -993,27 +1039,27 @@ For multiple accounts, pass variables such as `TELEGRAM_SESSION_STRING_WORK` and
 
 ### Keeping this fork in sync with upstream
 
-This fork tracks `chigwell/telegram-mcp`.
-`.github/workflows/upstream-sync.yml` merges `upstream/main` into this `main`
-once a day (03:17 UTC) and can also be started from the Actions tab.
+This fork tracks `chigwell/telegram-mcp` manually. The former scheduled
+`upstream-sync.yml` workflow was removed on purpose: nothing merges upstream
+into `main` for you, and a conflict is never resolved by a robot.
 
-- **Clean merge** — the merged `main` is pushed and the Docker build is
-  dispatched explicitly, because a push made with the default `GITHUB_TOKEN`
-  does not trigger other workflows. `latest` therefore follows upstream within a
-  day.
-- **Conflict** — the merge is aborted and the fork stays untouched; an issue
-  titled *Upstream sync conflict* lists the files that changed on both sides.
-  Resolve it locally with `git fetch upstream && git merge upstream/main`, push,
-  then close the issue.
+```bash
+git remote add upstream https://github.com/chigwell/telegram-mcp.git   # once
+git fetch upstream
+git merge upstream/main        # resolve conflicts, commit
+git push origin main
+```
 
-Fork-only files are never touched by the sync: `docker-compose-CN.yml` and
+Then start **Docker Build & Publish** from the Actions tab (or push any commit):
+a push made with the default `GITHUB_TOKEN` does not trigger other workflows, so
+`latest` only moves when a build actually runs.
+
+Fork-only files stay out of upstream's way: `docker-compose-CN.yml` and
 `.env.example.CN` carry Chinese comments (the CN compose file also pins the
-image), while `docker-compose.yml` and `.env.example` stay byte-identical to
-upstream and follow every upstream change.
+image), while `docker-compose.yml` and `.env.example` are kept byte-identical to
+upstream so a merge never touches them.
 
-The sync moves the `main` branch only; upstream release tags are not mirrored.
-GitHub also pauses scheduled workflows in repositories without activity for 60
-days — dispatch the workflow manually or push any commit to re-arm it.
+Only `main` is tracked this way; upstream release tags are not mirrored.
 
 ## Development
 

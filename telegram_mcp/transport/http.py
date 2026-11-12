@@ -9,6 +9,7 @@ from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from telegram_mcp.media_links import MEDIA_ROUTE_PREFIX, UPLOAD_ROUTE_PREFIX
+from telegram_mcp.transport.auth import wrap_with_auth
 from telegram_mcp.transport.protocol import (
     DEFAULT_PROTOCOL_VERSION,
     LATEST_PROTOCOL_VERSION,
@@ -222,7 +223,11 @@ def patch_fastmcp_streamable_http() -> None:
 
 
 def create_streamable_http_app(mcp_instance: Any) -> Any:
-    """Build and wrap the Starlette app from FastMCP with protocol negotiation."""
+    """Build and wrap the Starlette app from FastMCP with protocol negotiation.
+
+    HTTP authentication is added on top when ``MCP_AUTH_USER``/``MCP_AUTH_PASSWORD``
+    or ``MCP_AUTH_TOKEN`` are set; without them the app is returned unchanged.
+    """
     install_protocol_compatibility()
     if not hasattr(mcp_instance, "streamable_http_app"):
         return mcp_instance
@@ -236,7 +241,7 @@ def create_streamable_http_app(mcp_instance: Any) -> Any:
     # If not already wrapped via monkeypatch
     if not isinstance(app, ProtocolNegotiationMiddleware):
         app = ProtocolNegotiationMiddleware(app, mcp_instance)
-    return app
+    return wrap_with_auth(app)
 
 
 async def run_streamable_http_async(mcp_instance: Any) -> None:
